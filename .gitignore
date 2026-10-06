@@ -1,0 +1,6 @@
+# Compiled Prolog
+*.qlf
+*.sav
+
+# Editor backups
+*~
