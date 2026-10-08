@@ -5,6 +5,7 @@
 :- use_module(library(apply)).
 :- use_module(library(lists)).
 :- use_module(engine).
+:- use_module(parameters).
 :- use_module(questions).
 
 /** <module> Knowledge base of the virus diagnosis expert system
@@ -45,31 +46,6 @@ pre_existing_condition(diabetes).
 pre_existing_condition(cardiovascular_disease).
 pre_existing_condition(chronic_respiratory_disease).
 pre_existing_condition(cancer).
-
-%!  survival_hours(?Material, ?Hours) is nondet.
-%
-%   The virus survives up to Hours on a surface made of Material.
-
-survival_hours(copper, 4).
-survival_hours(cardboard, 24).
-survival_hours(plastic, 72).
-survival_hours(stainless_steel, 72).
-
-%!  incubation_period(?MinDays, ?MaxDays) is det.
-
-incubation_period(1, 14).
-
-%!  presymptomatic_days(?Days) is det.
-%
-%   An infected person may be contagious Days before the first symptoms.
-
-presymptomatic_days(2).
-
-%!  elderly_age(?Age) is det.
-%
-%   Patients older than Age are at higher risk.
-
-elderly_age(70).
 
                  /*******************************
                  *          DIAGNOSIS           *
@@ -130,7 +106,10 @@ infection_rule(possible, [Exposure, Symptoms]) :-
     characteristic_symptoms(Symptoms),
     trying("whether the patient was exposed in the outbreak area",
            holds(outbreak_area)),
-    Exposure = "stayed in the outbreak area (Virusville) in the last 14 days".
+    incubation_period(_, Max),
+    format(string(Exposure),
+           "stayed in the outbreak area (Virusville) in the last ~w days",
+           [Max]).
 % R6: suggestive symptoms without a known exposure.
 infection_rule(possible, [Symptoms, "no known exposure to the virus"]) :-
     suggestive_clinical_picture(Symptoms).

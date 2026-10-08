@@ -2,6 +2,7 @@
           [ question/3,                 % ?Attribute, ?Prompt, ?Type
             label/2                     % ?Term, ?Text
           ]).
+:- use_module(parameters).
 
 /** <module> Questions and vocabulary of the virus diagnosis expert system
 
@@ -29,10 +30,11 @@ question(contact_infected,
          "Was the patient recently in close contact (within sneezing or \c
           coughing distance) with a person infected with the virus?",
          yes_no).
-question(contact_presymptomatic,
-         "Was the patient recently in close contact with a person who \c
-          developed symptoms of the virus up to 2 days later?",
-         yes_no).
+question(contact_presymptomatic, Prompt, yes_no) :-
+    presymptomatic_days(Days),
+    format(string(Prompt),
+           "Was the patient recently in close contact with a person who \c
+            developed symptoms of the virus up to ~w days later?", [Days]).
 question(surface_contact,
          "Did the patient recently touch a surface (e.g. door handle, \c
           parcel) that an infected person had likely contaminated?",
@@ -45,10 +47,11 @@ question(surface_age_hours,
 question(days_since_exposure,
          "How many days ago was the most recent of these contacts?",
          number(0, 365)).
-question(outbreak_area,
-         "Has the patient stayed in Virusville, the outbreak area, in the \c
-          last 14 days?",
-         yes_no).
+question(outbreak_area, Prompt, yes_no) :-
+    incubation_period(_, Days),
+    format(string(Prompt),
+           "Has the patient stayed in Virusville, the outbreak area, in the \c
+            last ~w days?", [Days]).
 
 %!  label(?Term, ?Text:string) is nondet.
 %
