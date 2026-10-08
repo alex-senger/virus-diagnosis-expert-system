@@ -49,6 +49,14 @@ test(unknown_onset_falls_back, Rule == r1) :-
     rule_for([ contact_infected=yes, days_since_exposure=5,
                days_since_onset=unknown, symptom(fever)=yes ], Rule).
 
+test(old_exposure_explained_in_r6) :-
+    diagnose_facts([ contact_infected=yes, days_since_exposure=20,
+                     days_since_onset=2, symptom(fever)=yes,
+                     symptom(dry_cough)=yes ], Diagnosis),
+    assertion(Diagnosis.rule == r6),
+    Diagnosis.reasons = [_, Exposure],
+    once(sub_string(Exposure, _, _, _, "does not fit")).
+
 :- end_tests(symptom_onset).
 
 :- begin_tests(unknown_answers).

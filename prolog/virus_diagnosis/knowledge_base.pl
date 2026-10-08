@@ -123,10 +123,13 @@ infection_rule(r5, possible, [Exposure, Symptoms]) :-
     format(string(Exposure),
            "stayed in the outbreak area (Virusville) in the last ~w days",
            [Max]).
-infection_rule(r6, possible, [Symptoms, "no known exposure to the virus"]) :-
-    suggestive_clinical_picture(Symptoms).
+infection_rule(r6, possible, [Symptoms|Exposure]) :-
+    suggestive_clinical_picture(Symptoms),
+    exposure_notes(Exposure).
 infection_rule(r7, unlikely, Reasons) :-
-    findall(Reason, unlikely_reason(Reason), Reasons).
+    exposure_notes(Exposure),
+    symptom_note(Symptoms),
+    append(Exposure, [Symptoms], Reasons).
 
 incubation_note(Note) :-
     presymptomatic_days(Days),
@@ -140,9 +143,18 @@ incubation_note(Note) :-
                 still be incubating"
     ).
 
-unlikely_reason(Reason) :-
-    rejected_exposure(Reason).
-unlikely_reason(Reason) :-
+%!  exposure_notes(-Notes:list(string)) is det.
+%
+%   Explain why no recent exposure could be established.
+
+exposure_notes(Notes) :-
+    findall(Note, ( rejected_exposure(Note) ; expired_surface(Note) ), Found),
+    (   Found == []
+    ->  Notes = ["no exposure to the virus could be established"]
+    ;   Notes = Found
+    ).
+
+expired_surface(Reason) :-
     holds(surface_contact),
     value(surface_material, Material),
     value(surface_age_hours, Hours),
@@ -153,9 +165,8 @@ unlikely_reason(Reason) :-
     format(string(Reason),
            "the ~w surface was touched ~w h after contamination, but the \c
             virus survives there only up to ~w h", [Name, Hours, Limit]).
-unlikely_reason("no exposure to the virus could be established") :-
-    \+ exposure_sources(_).
-unlikely_reason(Reason) :-
+
+symptom_note(Reason) :-
     (   no_symptoms
     ->  Reason = "no symptoms reported (an asymptomatic infection cannot \c
                   be fully ruled out)"
