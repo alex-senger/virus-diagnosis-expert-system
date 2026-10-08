@@ -3,6 +3,7 @@
             assume/2,                   % +Attribute, +Value
             holds/1,                    % +Attribute
             value/2,                    % +Attribute, ?Value
+            unknown_attributes/1,       % -Attributes
             trying/2                    % +Description, :Goal
           ]).
 :- use_module(library(error)).
@@ -82,6 +83,14 @@ acquire(Attribute, Value) :-
 
 default_answer(yes_no, no) :- !.
 default_answer(_, unknown).
+
+%!  unknown_attributes(-Attributes:list) is det.
+%
+%   Attributes whose answer is `unknown`.  As questions are only asked
+%   when a rule needs them, each of these may affect the diagnosis.
+
+unknown_attributes(Attributes) :-
+    findall(Attribute, known(Attribute, unknown), Attributes).
 
 %!  trying(+Description:string, :Goal) is nondet.
 %

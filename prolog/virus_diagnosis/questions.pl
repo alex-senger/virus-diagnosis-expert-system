@@ -1,6 +1,7 @@
 :- module(questions,
           [ question/3,                 % ?Attribute, ?Prompt, ?Type
-            label/2                     % ?Term, ?Text
+            label/2,                    % ?Term, ?Text
+            attribute_label/2           % +Attribute, -Text
           ]).
 :- use_module(parameters).
 
@@ -52,6 +53,29 @@ question(outbreak_area, Prompt, yes_no) :-
     format(string(Prompt),
            "Has the patient stayed in Virusville, the outbreak area, in the \c
             last ~w days?", [Days]).
+
+%!  attribute_label(+Attribute, -Text:string) is det.
+%
+%   Text briefly names the question Attribute.
+
+attribute_label(symptom(Symptom), Text) :-
+    !,
+    label(Symptom, Text).
+attribute_label(condition(Condition), Text) :-
+    !,
+    label(Condition, Text).
+attribute_label(Attribute, Text) :-
+    attribute_name(Attribute, Text).
+
+attribute_name(age, "age").
+attribute_name(sex, "sex").
+attribute_name(contact_infected, "contact with an infected person").
+attribute_name(contact_presymptomatic, "contact with a pre-symptomatic person").
+attribute_name(surface_contact, "contact with a contaminated surface").
+attribute_name(surface_material, "surface material").
+attribute_name(surface_age_hours, "hours from contamination to touch").
+attribute_name(days_since_exposure, "days since the contact").
+attribute_name(outbreak_area, "stay in the outbreak area").
 
 %!  label(?Term, ?Text:string) is nondet.
 %

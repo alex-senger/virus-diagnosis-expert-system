@@ -37,6 +37,19 @@ test(unknown_case, [error(existence_error(case, nobody))]) :-
 
 :- end_tests(sample_cases).
 
+:- begin_tests(unknown_answers).
+
+test(unknown_serious_symptoms) :-
+    diagnose_facts([ symptom(breathing_difficulty)=unknown,
+                     symptom(chest_pain)=unknown, age=unknown ],
+                   Diagnosis),
+    assertion(Diagnosis.severity == undetermined),
+    assertion(length(Diagnosis.unknown, 3)),
+    Diagnosis.advice = [Advice],
+    once(sub_string(Advice, _, _, _, "phone the doctor")).
+
+:- end_tests(unknown_answers).
+
 :- begin_tests(reply_parsing).
 
 test(yes) :-

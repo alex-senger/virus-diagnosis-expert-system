@@ -59,19 +59,22 @@ pre_existing_condition(cancer).
 %     - infection: `likely`, `possible` or `unlikely`
 %     - rule: the infection rule that was applied (r1 .. r7)
 %     - reasons: strings explaining the infection level
-%     - severity: `serious`, `mild` or `none`
+%     - severity: `serious`, `undetermined`, `mild` or `none`
 %     - risk_factors: strings describing the risk factors
 %     - advice: strings with the recommended actions
+%     - unknown: strings naming the answers that were unknown
 
 diagnosis(diagnosis{infection: Infection, rule: Rule, reasons: Reasons,
                     severity: Severity, risk_factors: RiskFactors,
-                    advice: Advice}) :-
+                    advice: Advice, unknown: Unknown}) :-
     trying("the likelihood of a virus infection",
            infection(Rule, Infection, Reasons)),
     severity(Severity),
     trying("whether the patient is at risk of severe illness",
            risk_factors(RiskFactors)),
-    advice(Infection, Severity, RiskFactors, Advice).
+    advice(Infection, Severity, RiskFactors, Advice),
+    unknown_attributes(Attributes),
+    maplist(attribute_label, Attributes, Unknown).
 
 %!  infection(-Rule, -Level, -Reasons) is det.
 %
@@ -165,8 +168,8 @@ unlikely_reason("no exposure to the virus could be established") :-
     \+ exposure_sources(_).
 unlikely_reason(Reason) :-
     (   no_symptoms
-    ->  Reason = "no symptoms (an asymptomatic infection cannot be fully \c
-                  ruled out)"
+    ->  Reason = "no symptoms reported (an asymptomatic infection cannot \c
+                  be fully ruled out)"
     ;   present_symptoms(_, Symptoms),
         maplist(label, Symptoms, Labels),
         atomic_list_concat(Labels, ", ", Text),
@@ -327,9 +330,15 @@ survival_limit(Material, Limit) :-
                  *******************************/
 
 %!  severity(-Severity) is det.
+%
+%   Severity is `undetermined` if a serious symptom is unknown.
 
 severity(serious) :-
     present_symptoms(serious, [_|_]),
+    !.
+severity(undetermined) :-
+    symptom(Symptom, serious),
+    value(symptom(Symptom), unknown),
     !.
 severity(mild) :-
     \+ no_symptoms,
@@ -377,6 +386,10 @@ advice(Infection, Severity, RiskFactors, Advice) :-
 advice_rule(_, serious, _,
             "Seek immediate medical attention: phone the doctor or health \c
              facility for an initial assessment first and do not visit in \c
+             person.").
+advice_rule(_, undetermined, _,
+            "Serious symptoms could not be ruled out: phone the doctor or \c
+             health facility for an initial assessment and do not visit in \c
              person.").
 advice_rule(Infection, mild, _,
             "Manage the symptoms at home and self-isolate; mild symptoms \c

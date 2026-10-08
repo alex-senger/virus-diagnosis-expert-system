@@ -3,7 +3,8 @@
             demo/1,                     % +CaseId
             demo_all/0,
             run_consultation/1,         % -Diagnosis
-            diagnose_case/2             % +CaseId, -Diagnosis
+            diagnose_case/2,            % +CaseId, -Diagnosis
+            diagnose_facts/2            % +Facts, -Diagnosis
           ]).
 :- use_module(library(error)).
 :- use_module(library(lists)).
@@ -49,6 +50,15 @@ diagnose_case(CaseId, Diagnosis) :-
     ->  true
     ;   existence_error(case, CaseId)
     ),
+    diagnose_facts(Facts, Diagnosis).
+
+%!  diagnose_facts(+Facts:list, -Diagnosis) is det.
+%
+%   Diagnose a patient described by Attribute=Value pairs without asking
+%   questions.
+
+diagnose_facts(Facts, Diagnosis) :-
+    must_be(list, Facts),
     reset_consultation(case),
     forall(member(Attribute=Value, Facts), assume(Attribute, Value)),
     diagnosis(Diagnosis).
@@ -90,6 +100,10 @@ print_diagnosis(Diagnosis) :-
     format("Symptom severity: ~w~n", [Diagnosis.severity]),
     print_list("Risk factors", Diagnosis.risk_factors),
     print_list("Advice", Diagnosis.advice),
+    (   Diagnosis.unknown == []
+    ->  true
+    ;   print_list("Could not be established", Diagnosis.unknown)
+    ),
     format("(Decision support only; not a substitute for a medical \c
             diagnosis.)~n").
 
