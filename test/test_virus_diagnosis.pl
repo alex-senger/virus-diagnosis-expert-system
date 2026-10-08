@@ -29,7 +29,8 @@ test(typical_no_contact, Infection == likely) :-
 test(common_cold, [Infection, Severity] == [unlikely, mild]) :-
     diagnose(common_cold, Infection, Severity, _).
 test(serious_advice) :-
-    diagnose_case(elderly_serious, diagnosis(_, _, _, _, [Advice])),
+    diagnose_case(elderly_serious, Diagnosis),
+    Diagnosis.advice = [Advice],
     once(sub_string(Advice, _, _, _, "phone the doctor")).
 test(unknown_case, [error(existence_error(case, nobody))]) :-
     diagnose_case(nobody, _).
@@ -74,16 +75,21 @@ test(only_needed_questions, Infection-Severity == likely-mild) :-
                 "30",                               % age
                 "n", "n", "n", "n", "n"             % conditions
               ],
-    consult_with(Answers, diagnosis(Infection, _, Severity, [], _), Rest),
-    assertion(Rest == end_of_file).
+    consult_with(Answers, Diagnosis, Rest),
+    assertion(Rest == end_of_file),
+    assertion(Diagnosis.risk_factors == []),
+    Infection = Diagnosis.infection,
+    Severity = Diagnosis.severity.
 test(quit_aborts, throws(consultation_aborted)) :-
     consult_with(["quit"], _, _).
 
 :- end_tests(interactive).
 
 diagnose(CaseId, Infection, Severity, RiskCount) :-
-    diagnose_case(CaseId, diagnosis(Infection, _, Severity, Risks, _)),
-    length(Risks, RiskCount).
+    diagnose_case(CaseId, Diagnosis),
+    Infection = Diagnosis.infection,
+    Severity = Diagnosis.severity,
+    length(Diagnosis.risk_factors, RiskCount).
 
 %   Run an interactive consultation reading Answers as user input.  Rest
 %   is the next line left unread afterwards.

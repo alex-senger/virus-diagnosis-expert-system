@@ -1,5 +1,6 @@
 :- module(knowledge_base,
-          [ diagnosis/1                 % -Diagnosis
+          [ diagnosis/1,                % -Diagnosis
+            rule_description/2          % ?Rule, ?Description
           ]).
 :- use_module(library(aggregate)).
 :- use_module(library(apply)).
@@ -51,58 +52,67 @@ pre_existing_condition(cancer).
                  *          DIAGNOSIS           *
                  *******************************/
 
-%!  diagnosis(-Diagnosis) is det.
+%!  diagnosis(-Diagnosis:dict) is det.
 %
-%   Diagnose the current patient.  Diagnosis is
+%   Diagnose the current patient.  Diagnosis is a dict with the keys
 %
-%       diagnosis(Infection, Reasons, Severity, RiskFactors, Advice)
-%
-%   where Infection is `likely`, `possible` or `unlikely`, Severity is
-%   `serious`, `mild` or `none`, and the other arguments are lists of
-%   strings.
+%     - infection: `likely`, `possible` or `unlikely`
+%     - rule: the infection rule that was applied (r1 .. r7)
+%     - reasons: strings explaining the infection level
+%     - severity: `serious`, `mild` or `none`
+%     - risk_factors: strings describing the risk factors
+%     - advice: strings with the recommended actions
 
-diagnosis(diagnosis(Infection, Reasons, Severity, RiskFactors, Advice)) :-
+diagnosis(diagnosis{infection: Infection, rule: Rule, reasons: Reasons,
+                    severity: Severity, risk_factors: RiskFactors,
+                    advice: Advice}) :-
     trying("the likelihood of a virus infection",
-           infection(Infection, Reasons)),
+           infection(Rule, Infection, Reasons)),
     severity(Severity),
     trying("whether the patient is at risk of severe illness",
            risk_factors(RiskFactors)),
     advice(Infection, Severity, RiskFactors, Advice).
 
-%!  infection(-Level, -Reasons) is det.
+%!  infection(-Rule, -Level, -Reasons) is det.
 %
-%   Level is the conclusion of the first infection rule that is proved.
+%   Level is the conclusion of Rule, the first infection rule that is
+%   proved.
 
-infection(Level, Reasons) :-
+infection(Rule, Level, Reasons) :-
     trying("which symptoms the patient shows", symptom_profile),
-    once(infection_rule(Level, Reasons)).
+    once(infection_rule(Rule, Level, Reasons)).
 
 symptom_profile :-
     forall(member(Class, [serious, common, less_common]),
            present_symptoms(Class, _)).
 
-%!  infection_rule(?Level, -Reasons) is nondet.
+%!  rule_description(?Rule, ?Description:string) is nondet.
+
+rule_description(r1, "recent exposure explaining characteristic symptoms").
+rule_description(r2, "typical clinical picture").
+rule_description(r3, "recent exposure with non-specific symptoms").
+rule_description(r4, "recent exposure, possibly still incubating").
+rule_description(r5, "outbreak-area stay with characteristic symptoms").
+rule_description(r6, "suggestive symptoms without a recent exposure").
+rule_description(r7, "no rule for a suspected infection applies").
+
+%!  infection_rule(?Rule, ?Level, -Reasons) is nondet.
 %
 %   Rules are ordered from the strongest to the weakest conclusion.
 
-% R1: recent exposure that explains characteristic symptoms.
-infection_rule(likely, [Exposure, Symptoms]) :-
+infection_rule(r1, likely, [Exposure, Symptoms]) :-
     trying("whether the patient had a recent exposure to the virus",
            recent_exposure(symptomatic, Exposure)),
     characteristic_symptoms(Symptoms).
-% R2: the typical clinical picture, even without a known exposure.
-infection_rule(likely, [Symptoms]) :-
+infection_rule(r2, likely, [Symptoms]) :-
     typical_clinical_picture(Symptoms).
-% R3: recent exposure with only non-specific symptoms.
-infection_rule(possible, [Exposure, Symptoms]) :-
+infection_rule(r3, possible, [Exposure, Symptoms]) :-
     recent_exposure(symptomatic, Exposure),
     nonspecific_symptoms(Symptoms).
-% R4: recent exposure that may still be incubating.
-infection_rule(possible, [Exposure, Note]) :-
+infection_rule(r4, possible, [Exposure, Note]) :-
     recent_exposure(incubating, Exposure),
     incubation_note(Note).
-% R5: community exposure with characteristic symptoms.
-infection_rule(possible, [Exposure, Symptoms]) :-
+infection_rule(r5, possible, [Exposure, Symptoms]) :-
     characteristic_symptoms(Symptoms),
     trying("whether the patient was exposed in the outbreak area",
            holds(outbreak_area)),
@@ -110,11 +120,9 @@ infection_rule(possible, [Exposure, Symptoms]) :-
     format(string(Exposure),
            "stayed in the outbreak area (Virusville) in the last ~w days",
            [Max]).
-% R6: suggestive symptoms without a known exposure.
-infection_rule(possible, [Symptoms, "no known exposure to the virus"]) :-
+infection_rule(r6, possible, [Symptoms, "no known exposure to the virus"]) :-
     suggestive_clinical_picture(Symptoms).
-% R7: no rule above could be proved.
-infection_rule(unlikely, Reasons) :-
+infection_rule(r7, unlikely, Reasons) :-
     findall(Reason, unlikely_reason(Reason), Reasons).
 
 incubation_note(Note) :-

@@ -79,15 +79,17 @@ banner :-
             Type 'unknown' if you do not know, 'why' to see why a question~n\c
             is asked and 'quit' to stop.~n").
 
-print_diagnosis(diagnosis(Infection, Reasons, Severity, RiskFactors,
-                          Advice)) :-
-    upcase_atom(Infection, Level),
+print_diagnosis(Diagnosis) :-
+    upcase_atom(Diagnosis.infection, Level),
+    upcase_atom(Diagnosis.rule, Rule),
+    rule_description(Diagnosis.rule, Description),
     format("~n--- Diagnosis ---~n"),
     format("Virus infection: ~w~n", [Level]),
-    print_list("Because", Reasons),
-    format("Symptom severity: ~w~n", [Severity]),
-    print_list("Risk factors", RiskFactors),
-    print_list("Advice", Advice),
+    format("Rule applied: ~w (~w)~n", [Rule, Description]),
+    print_list("Because", Diagnosis.reasons),
+    format("Symptom severity: ~w~n", [Diagnosis.severity]),
+    print_list("Risk factors", Diagnosis.risk_factors),
+    print_list("Advice", Diagnosis.advice),
     format("(Decision support only; not a substitute for a medical \c
             diagnosis.)~n").
 
