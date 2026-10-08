@@ -11,6 +11,7 @@
 :- use_module(virus_diagnosis/engine).
 :- use_module(virus_diagnosis/knowledge_base).
 :- use_module(virus_diagnosis/cases).
+:- use_module(virus_diagnosis/questions, [label/2, attribute_label/2]).
 
 /** <module> Expert system diagnosing the Virusland virus infection
 
@@ -70,9 +71,8 @@ diagnose_facts(Facts, Diagnosis) :-
 demo(CaseId) :-
     diagnose_case(CaseId, Diagnosis),
     case(CaseId, Description, Facts),
-    format("~n=== Case ~w ===~n~w~nPatient data:~n", [CaseId, Description]),
-    forall(member(Attribute=Value, Facts),
-           format("  ~w = ~w~n", [Attribute, Value])),
+    format("~n=== Case ~w ===~n~w~n", [CaseId, Description]),
+    print_patient(Facts),
     print_diagnosis(Diagnosis).
 
 %!  demo_all is det.
@@ -81,6 +81,40 @@ demo(CaseId) :-
 
 demo_all :-
     forall(case(CaseId, _, _), demo(CaseId)).
+
+print_patient(Facts) :-
+    format("Patient data:~n"),
+    forall(member(Group-Title, [ bio-"Bio data", condition-"Conditions",
+                                 symptom-"Symptoms", history-"History" ]),
+           ( findall(Text,
+                     ( member(Fact, Facts), fact_text(Fact, Group, Text) ),
+                     Texts),
+             (   Texts == []
+             ->  Joined = "none"
+             ;   atomic_list_concat(Texts, "; ", Joined)
+             ),
+             format("  ~w: ~w~n", [Title, Joined])
+           )).
+
+fact_text(age=Age, bio, Text) :-
+    format(string(Text), "age ~w", [Age]).
+fact_text(sex=Sex, bio, Text) :-
+    format(string(Text), "~w", [Sex]).
+fact_text(condition(Condition)=Answer, condition, Text) :-
+    answer_text(Condition, Answer, Text).
+fact_text(symptom(Symptom)=Answer, symptom, Text) :-
+    answer_text(Symptom, Answer, Text).
+fact_text(Attribute=Value, history, Text) :-
+    \+ memberchk(Attribute, [age, sex, condition(_), symptom(_)]),
+    attribute_label(Attribute, Label),
+    format(string(Text), "~w: ~w", [Label, Value]).
+
+answer_text(Term, Answer, Text) :-
+    label(Term, Label),
+    (   Answer == yes
+    ->  Text = Label
+    ;   format(string(Text), "~w (~w)", [Label, Answer])
+    ).
 
 banner :-
     format("~nVirusland virus diagnosis expert system~n\c
