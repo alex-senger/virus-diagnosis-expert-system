@@ -5,8 +5,9 @@ presence or absence of the Virusland virus infection. It takes a patient's
 symptoms, bio data and recent history of events, and works out:
 
 - the **likelihood of infection** (`likely`, `possible` or `unlikely`),
-  with the rules and facts behind it,
-- the **symptom severity** (`serious`, `mild` or `none`),
+  with the rule applied and the facts behind it,
+- the **symptom severity** (`serious`, `mild`, `none`, or `undetermined`
+  when a serious symptom is unknown),
 - the **risk factors** for severe illness (age above 70, pre-existing
   conditions, and male sex within a risk group),
 - **advice**: call a doctor immediately, manage symptoms at home,
@@ -16,7 +17,8 @@ The conclusions come from Prolog's built-in backward chaining. Questions
 are asked only when a rule needs the answer. For example, the system asks
 about surface material only after a surface contact, and asks the
 patient's sex only when the patient is in a risk group. Each answer is
-asked once and remembered.
+asked once and remembered. Answers given as `unknown` are listed under
+"Could not be established".
 
 ## Requirements
 
@@ -62,16 +64,17 @@ From the Prolog toplevel:
 Was the patient recently in close contact (within sneezing or coughing distance) with a person infected with the virus? [yes/no/unknown/why]
 > y
 ...
-How many days ago was the most recent of these contacts? [0-365/unknown/why]
+How many days ago did the patient's first symptoms start? [0-365/unknown/why]
 > why
-  I am trying to establish when the exposure happened,
+  I am trying to establish whether the incubation period fits the symptoms,
     which is needed to establish whether the patient had a recent exposure to the virus,
     which is needed to establish the likelihood of a virus infection.
-
+...
 --- Diagnosis ---
 Virus infection: LIKELY
+Rule applied: R1 (recent exposure explaining characteristic symptoms)
 Because:
-  - close contact with an infected person, 6 day(s) ago (within the 1-14 day window)
+  - close contact with an infected person, 6 day(s) ago; symptoms started 3 day(s) later, within the 1-14 day incubation period
   - characteristic symptoms: a fever, a persistent dry cough
 Symptom severity: mild
 Risk factors:
@@ -96,6 +99,7 @@ swipl -g run_tests -t halt test/test_virus_diagnosis.pl
 | `prolog/virus_diagnosis.pl` | Entry points (`start/0`, `demo/1`, `demo_all/0`) and output |
 | `prolog/virus_diagnosis/knowledge_base.pl` | Domain facts and diagnosis rules |
 | `prolog/virus_diagnosis/engine.pl` | Fact store, question dialogue, `why` explanations |
+| `prolog/virus_diagnosis/parameters.pl` | Incubation period, survival times and other numeric parameters |
 | `prolog/virus_diagnosis/questions.pl` | Questions and labels of domain terms |
 | `prolog/virus_diagnosis/cases.pl` | Sample patients |
 | `test/test_virus_diagnosis.pl` | plunit tests |
@@ -108,12 +112,12 @@ proved gives the result:
 
 | Rule | Conditions | Result |
 | --- | --- | --- |
-| R1 | Direct exposure 1–14 days ago and characteristic symptoms | likely |
+| R1 | Symptoms started 1–14 days after a direct exposure, and they are characteristic | likely |
 | R2 | At least two common symptoms and loss of smell or taste | likely |
-| R3 | Direct exposure 1–14 days ago with only less common symptoms | possible |
-| R4 | Direct exposure 0–14 days ago (may still be incubating) | possible |
+| R3 | Symptoms started 1–14 days after a direct exposure, but only less common ones | possible |
+| R4 | Direct exposure 0–14 days ago that does not explain any symptoms (may still be incubating) | possible |
 | R5 | Stay in the outbreak area and characteristic symptoms | possible |
-| R6 | Two common symptoms, or one common symptom and loss of smell, without exposure | possible |
+| R6 | Two common symptoms, or one common symptom and loss of smell, without a fitting exposure | possible |
 | R7 | None of the above | unlikely |
 
 What the rules count as each kind of exposure or symptom:
@@ -127,8 +131,11 @@ What the rules count as each kind of exposure or symptom:
     on plastic or stainless steel.
 - **Characteristic symptoms** are any common or serious symptom, or a
   loss of smell or taste.
-- **Unknown answers about timing or surface material** are treated as the
-  worst case, as a precaution.
+- **Unknown answers about exposure timing or surface material** are
+  treated as the worst case, as a precaution. If the symptom onset is
+  unknown, the exposure must be 1–14 days ago.
+- **An unknown serious symptom** makes the severity `undetermined` and
+  leads to the advice to phone a doctor.
 
 ## Disclaimer
 
