@@ -155,7 +155,8 @@ typed_answer(number(Min, Max), Reply, Number) :-
 typed_answer(choice(Options), Reply, Option) :-
     (   whole_number(Reply, Index)
     ->  nth1(Index, Options, Option)
-    ;   atom_string(Option, Reply),
+    ;   split_string(Reply, " ", "", Words),
+        atomic_list_concat(Words, '_', Option),
         memberchk(Option, Options)
     ).
 

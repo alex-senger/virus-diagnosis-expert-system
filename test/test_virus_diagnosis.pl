@@ -53,6 +53,9 @@ test(not_a_number) :-
 test(choice_by_name) :-
     engine:reply_response("plastic", choice([copper, plastic]),
                           answer(plastic)).
+test(choice_with_space) :-
+    engine:reply_response("stainless steel", choice([copper, stainless_steel]),
+                          answer(stainless_steel)).
 test(choice_by_index) :-
     engine:reply_response("2", choice([copper, plastic]), answer(plastic)).
 
