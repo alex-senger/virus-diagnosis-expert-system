@@ -135,24 +135,13 @@ incubation_note(Note) :-
                "no symptoms yet: the patient may be incubating or \c
                 asymptomatic and can be contagious up to ~w days before \c
                 symptoms appear", [Days])
-    ;   Note = "the symptoms started too early to be caused by this \c
-                exposure, but the patient may still be incubating"
+    ;   Note = "the symptoms started before or on the day of this \c
+                exposure, so it cannot explain them, but the patient may \c
+                still be incubating"
     ).
 
 unlikely_reason(Reason) :-
-    exposure_sources(Sources),
-    value(days_since_exposure, Days),
-    integer(Days),
-    (   no_symptoms
-    ->  Phase = incubating
-    ;   Phase = symptomatic
-    ),
-    exposure_window(Phase, Min, Max),
-    \+ between(Min, Max, Days),
-    atomic_list_concat(Sources, "; ", Text),
-    format(string(Reason),
-           "~w ~w day(s) ago lies outside the ~w-~w day incubation window",
-           [Text, Days, Min, Max]).
+    rejected_exposure(Reason).
 unlikely_reason(Reason) :-
     holds(surface_contact),
     value(surface_material, Material),
@@ -252,34 +241,81 @@ describe_symptoms(Intro, Symptoms, Reason) :-
 
 %!  recent_exposure(+Phase, -Reason) is semidet.
 %
-%   The patient had a direct exposure inside the window of Phase:
-%   `symptomatic` (exposure can explain current symptoms) or
-%   `incubating` (the patient may still develop symptoms).  Unknown
-%   timing is assumed to be inside the window as a precaution.
+%   The patient had a direct exposure whose timing fits Phase:
+%
+%     - `symptomatic`: the symptoms started within the incubation period
+%       after the exposure, so the exposure can explain them
+%     - `incubating`: the exposure is at most one incubation period ago,
+%       so symptoms may still develop
+%
+%   Unknown exposure timing is assumed to fit as a precaution.
 
 recent_exposure(Phase, Reason) :-
     exposure_sources(Sources),
     trying("when the exposure happened",
            value(days_since_exposure, Days)),
-    exposure_window(Phase, Min, Max),
-    within_window(Days, Min, Max),
+    exposure_fits(Phase, Days, Timing),
     atomic_list_concat(Sources, "; ", Text),
-    (   Days == unknown
-    ->  format(string(Reason),
-               "~w (timing unknown, assumed recent as a precaution)", [Text])
+    format(string(Reason), "~w, ~w", [Text, Timing]).
+
+exposure_fits(_, unknown, "timing unknown, assumed recent as a precaution") :-
+    !.
+exposure_fits(symptomatic, Days, Timing) :-
+    \+ no_symptoms,
+    trying("whether the incubation period fits the symptoms",
+           value(days_since_onset, Onset)),
+    incubation_period(Min, Max),
+    (   Onset == unknown
+    ->  between(Min, Max, Days),
+        format(string(Timing),
+               "~w day(s) ago, within the ~w-~w day incubation period; \c
+                symptom onset unknown", [Days, Min, Max])
+    ;   Incubation is Days - Onset,
+        between(Min, Max, Incubation),
+        format(string(Timing),
+               "~w day(s) ago; symptoms started ~w day(s) later, within the \c
+                ~w-~w day incubation period", [Days, Incubation, Min, Max])
+    ).
+exposure_fits(incubating, Days, Timing) :-
+    incubation_period(_, Max),
+    Days =< Max,
+    format(string(Timing), "~w day(s) ago, within the last ~w days",
+           [Days, Max]).
+
+%!  rejected_exposure(-Reason:string) is semidet.
+%
+%   A direct exposure was reported, but its timing fits no phase.
+
+rejected_exposure(Reason) :-
+    exposure_sources(Sources),
+    value(days_since_exposure, Days),
+    integer(Days),
+    \+ recent_exposure(symptomatic, _),
+    \+ recent_exposure(incubating, _),
+    incubation_period(Min, Max),
+    atomic_list_concat(Sources, "; ", Text),
+    (   \+ no_symptoms,
+        value(days_since_onset, Onset),
+        integer(Onset)
+    ->  Incubation is Days - Onset,
+        onset_text(Incubation, OnsetText),
+        format(string(Reason),
+               "~w ~w day(s) ago does not fit the ~w-~w day incubation \c
+                period: ~w", [Text, Days, Min, Max, OnsetText])
     ;   format(string(Reason),
-               "~w, ~w day(s) ago (within the ~w-~w day window)",
-               [Text, Days, Min, Max])
+               "~w ~w day(s) ago is longer ago than the ~w-day incubation \c
+                period", [Text, Days, Max])
     ).
 
-exposure_window(symptomatic, Min, Max) :-
-    incubation_period(Min, Max).
-exposure_window(incubating, 0, Max) :-
-    incubation_period(_, Max).
-
-within_window(unknown, _, _) :- !.
-within_window(Days, Min, Max) :-
-    between(Min, Max, Days).
+onset_text(Incubation, Text) :-
+    (   Incubation < 0
+    ->  Before is -Incubation,
+        format(string(Text), "symptoms started ~w day(s) before it", [Before])
+    ;   Incubation =:= 0
+    ->  Text = "symptoms started on the same day"
+    ;   format(string(Text), "symptoms started ~w day(s) after it",
+               [Incubation])
+    ).
 
 exposure_sources(Sources) :-
     findall(Source, direct_exposure(Source), Sources),

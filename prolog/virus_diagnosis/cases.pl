@@ -14,7 +14,7 @@ case(elderly_serious,
      "78-year-old man with hypertension and breathing difficulty, 5 days \c
       after contact with an infected person",
      [ age=78, sex=male, condition(hypertension)=yes,
-       contact_infected=yes, days_since_exposure=5,
+       contact_infected=yes, days_since_exposure=5, days_since_onset=2,
        symptom(fever)=yes, symptom(dry_cough)=yes,
        symptom(breathing_difficulty)=yes
      ]).
@@ -22,7 +22,7 @@ case(young_mild,
      "25-year-old woman with fever, tiredness and headache, 4 days after \c
       meeting a friend who fell ill 2 days later",
      [ age=25, sex=female,
-       contact_presymptomatic=yes, days_since_exposure=4,
+       contact_presymptomatic=yes, days_since_exposure=4, days_since_onset=1,
        symptom(fever)=yes, symptom(tiredness)=yes, symptom(headache)=yes
      ]).
 case(exposed_no_symptoms,

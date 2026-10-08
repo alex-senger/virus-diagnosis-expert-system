@@ -37,6 +37,20 @@ test(unknown_case, [error(existence_error(case, nobody))]) :-
 
 :- end_tests(sample_cases).
 
+:- begin_tests(symptom_onset).
+
+test(onset_fits_old_exposure, Rule == r1) :-
+    rule_for([ contact_infected=yes, days_since_exposure=20,
+               days_since_onset=10, symptom(fever)=yes ], Rule).
+test(symptoms_before_exposure, Rule == r4) :-
+    rule_for([ contact_infected=yes, days_since_exposure=3,
+               days_since_onset=5, symptom(fever)=yes ], Rule).
+test(unknown_onset_falls_back, Rule == r1) :-
+    rule_for([ contact_infected=yes, days_since_exposure=5,
+               days_since_onset=unknown, symptom(fever)=yes ], Rule).
+
+:- end_tests(symptom_onset).
+
 :- begin_tests(unknown_answers).
 
 test(unknown_serious_symptoms) :-
@@ -85,6 +99,7 @@ test(only_needed_questions, Infection-Severity == likely-mild) :-
                 "maybe", "n", "n", "n", "n", "n", "n", "n", % less common
                 "y", "n", "n",                      % contacts, surface
                 "3",                                % days since exposure
+                "1",                                % days since onset
                 "30",                               % age
                 "n", "n", "n", "n", "n"             % conditions
               ],
@@ -97,6 +112,10 @@ test(quit_aborts, throws(consultation_aborted)) :-
     consult_with(["quit"], _, _).
 
 :- end_tests(interactive).
+
+rule_for(Facts, Rule) :-
+    diagnose_facts(Facts, Diagnosis),
+    Rule = Diagnosis.rule.
 
 diagnose(CaseId, Infection, Severity, RiskCount) :-
     diagnose_case(CaseId, Diagnosis),

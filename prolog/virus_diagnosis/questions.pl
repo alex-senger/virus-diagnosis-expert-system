@@ -48,6 +48,9 @@ question(surface_age_hours,
 question(days_since_exposure,
          "How many days ago was the most recent of these contacts?",
          number(0, 365)).
+question(days_since_onset,
+         "How many days ago did the patient's first symptoms start?",
+         number(0, 365)).
 question(outbreak_area, Prompt, yes_no) :-
     incubation_period(_, Days),
     format(string(Prompt),
@@ -75,6 +78,7 @@ attribute_name(surface_contact, "contact with a contaminated surface").
 attribute_name(surface_material, "surface material").
 attribute_name(surface_age_hours, "hours from contamination to touch").
 attribute_name(days_since_exposure, "days since the contact").
+attribute_name(days_since_onset, "days since the first symptoms").
 attribute_name(outbreak_area, "stay in the outbreak area").
 
 %!  label(?Term, ?Text:string) is nondet.
