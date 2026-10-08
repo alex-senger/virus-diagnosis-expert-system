@@ -3,6 +3,7 @@
 :- use_module(library(lists)).
 :- use_module(library(readutil)).
 :- use_module('../prolog/virus_diagnosis').
+:- use_module('../prolog/virus_diagnosis/cases').
 
 /** <module> Tests for the virus diagnosis expert system
 
@@ -11,31 +12,72 @@ Run with: swipl -g run_tests -t halt test/test_virus_diagnosis.pl
 
 :- begin_tests(sample_cases).
 
-test(elderly_serious, [Infection, Severity, Risks] ==
-     [likely, serious, 3]) :-
-    diagnose(elderly_serious, Infection, Severity, Risks).
-test(young_mild, [Infection, Severity, Risks] == [likely, mild, 0]) :-
-    diagnose(young_mild, Infection, Severity, Risks).
-test(exposed_no_symptoms, [Infection, Severity] == [possible, none]) :-
-    diagnose(exposed_no_symptoms, Infection, Severity, _).
-test(copper_surface, Infection == unlikely) :-
-    diagnose(copper_surface, Infection, _, _).
-test(old_exposure, Infection == unlikely) :-
-    diagnose(old_exposure, Infection, _, _).
-test(outbreak_area_diabetic, [Infection, Risks] == [possible, 1]) :-
-    diagnose(outbreak_area_diabetic, Infection, _, Risks).
-test(typical_no_contact, Infection == likely) :-
-    diagnose(typical_no_contact, Infection, _, _).
-test(common_cold, [Infection, Severity] == [unlikely, mild]) :-
-    diagnose(common_cold, Infection, Severity, _).
-test(serious_advice) :-
-    diagnose_case(elderly_serious, Diagnosis),
+%   expected(?CaseId, ?Infection, ?Rule, ?Severity, ?RiskFactorCount)
+expected(elderly_serious,           likely,   r1, serious,      3).
+expected(young_mild,                likely,   r1, mild,         0).
+expected(nonspecific_after_contact, possible, r3, mild,         0).
+expected(exposed_no_symptoms,       possible, r4, none,         0).
+expected(copper_surface,            unlikely, r7, none,         0).
+expected(old_exposure,              unlikely, r7, none,         0).
+expected(old_contact_with_symptoms, possible, r6, mild,         0).
+expected(symptoms_before_contact,   possible, r4, mild,         0).
+expected(outbreak_area_diabetic,    possible, r5, mild,         1).
+expected(typical_no_contact,        likely,   r2, mild,         0).
+expected(common_cold,               unlikely, r7, mild,         0).
+expected(chest_pain_no_contact,     unlikely, r7, serious,      2).
+expected(unknown_answers,           unlikely, r7, undetermined, 0).
+
+test(case, [ forall(expected(Id, Infection, Rule, Severity, Risks)),
+             Actual == [Infection, Rule, Severity, Risks] ]) :-
+    diagnose_case(Id, Diagnosis),
+    length(Diagnosis.risk_factors, Count),
+    Actual = [Diagnosis.infection, Diagnosis.rule, Diagnosis.severity, Count].
+test(every_case_tested) :-
+    forall(case(Id, _, _), expected(Id, _, _, _, _)).
+test(serious_advice, forall(member(Id, [elderly_serious,
+                                        chest_pain_no_contact]))) :-
+    diagnose_case(Id, Diagnosis),
     Diagnosis.advice = [Advice],
     once(sub_string(Advice, _, _, _, "phone the doctor")).
 test(unknown_case, [error(existence_error(case, nobody))]) :-
     diagnose_case(nobody, _).
 
 :- end_tests(sample_cases).
+
+:- begin_tests(boundaries).
+
+test(exposure_today, Rule == r4) :-
+    rule_for([contact_infected=yes, days_since_exposure=0], Rule).
+test(exposure_14_days_ago, Rule == r4) :-
+    rule_for([contact_infected=yes, days_since_exposure=14], Rule).
+test(exposure_15_days_ago, Rule == r7) :-
+    rule_for([contact_infected=yes, days_since_exposure=15], Rule).
+test(incubation_0_days, Rule == r4) :-
+    rule_for([ contact_infected=yes, days_since_exposure=3,
+               days_since_onset=3, symptom(fever)=yes ], Rule).
+test(incubation_1_day, Rule == r1) :-
+    rule_for([ contact_infected=yes, days_since_exposure=1,
+               days_since_onset=0, symptom(fever)=yes ], Rule).
+test(incubation_14_days, Rule == r1) :-
+    rule_for([ contact_infected=yes, days_since_exposure=14,
+               days_since_onset=0, symptom(fever)=yes ], Rule).
+test(incubation_15_days, Rule == r7) :-
+    rule_for([ contact_infected=yes, days_since_exposure=15,
+               days_since_onset=0, symptom(fever)=yes ], Rule).
+test(age_70, Risks == []) :-
+    diagnose_facts([age=70], Diagnosis),
+    Risks = Diagnosis.risk_factors.
+test(age_71, Count == 1) :-
+    diagnose_facts([age=71, sex=female], Diagnosis),
+    length(Diagnosis.risk_factors, Count).
+test(copper_at_limit, Rule == r4) :-
+    rule_for([ surface_contact=yes, surface_material=copper,
+               surface_age_hours=4, days_since_exposure=1 ], Rule).
+test(copper_past_limit, Rule == r7) :-
+    rule_for([ surface_contact=yes, surface_material=copper,
+               surface_age_hours=5, days_since_exposure=1 ], Rule).
+
+:- end_tests(boundaries).
 
 :- begin_tests(symptom_onset).
 
@@ -124,12 +166,6 @@ test(quit_aborts, throws(consultation_aborted)) :-
 rule_for(Facts, Rule) :-
     diagnose_facts(Facts, Diagnosis),
     Rule = Diagnosis.rule.
-
-diagnose(CaseId, Infection, Severity, RiskCount) :-
-    diagnose_case(CaseId, Diagnosis),
-    Infection = Diagnosis.infection,
-    Severity = Diagnosis.severity,
-    length(Diagnosis.risk_factors, RiskCount).
 
 %   Run an interactive consultation reading Answers as user input.  Rest
 %   is the next line left unread afterwards.

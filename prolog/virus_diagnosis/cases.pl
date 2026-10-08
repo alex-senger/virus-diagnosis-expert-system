@@ -25,6 +25,13 @@ case(young_mild,
        contact_presymptomatic=yes, days_since_exposure=4, days_since_onset=1,
        symptom(fever)=yes, symptom(tiredness)=yes, symptom(headache)=yes
      ]).
+case(nonspecific_after_contact,
+     "50-year-old woman with a headache and diarrhoea that started 4 days \c
+      after contact with an infected person",
+     [ age=50, sex=female,
+       contact_infected=yes, days_since_exposure=6, days_since_onset=2,
+       symptom(headache)=yes, symptom(diarrhoea)=yes
+     ]).
 case(exposed_no_symptoms,
      "40-year-old woman without symptoms who touched a contaminated \c
       plastic parcel 3 days ago",
@@ -45,6 +52,20 @@ case(old_exposure,
      [ age=35, sex=male,
        contact_infected=yes, days_since_exposure=20
      ]).
+case(old_contact_with_symptoms,
+     "42-year-old man with fever and dry cough since 2 days, whose contact \c
+      with an infected person was 20 days ago",
+     [ age=42, sex=male,
+       contact_infected=yes, days_since_exposure=20, days_since_onset=2,
+       symptom(fever)=yes, symptom(dry_cough)=yes
+     ]).
+case(symptoms_before_contact,
+     "28-year-old woman whose fever started 5 days ago, 2 days before \c
+      contact with an infected person",
+     [ age=28, sex=female,
+       contact_infected=yes, days_since_exposure=3, days_since_onset=5,
+       symptom(fever)=yes
+     ]).
 case(outbreak_area_diabetic,
      "55-year-old woman with diabetes and a fever who stayed in Virusville",
      [ age=55, sex=female, condition(diabetes)=yes,
@@ -60,4 +81,17 @@ case(common_cold,
      "30-year-old man with a running nose and sore throat, no contact",
      [ age=30, sex=male,
        symptom(running_nose)=yes, symptom(sore_throat)=yes
+     ]).
+case(chest_pain_no_contact,
+     "64-year-old man with a cardiovascular disease and chest pain, no \c
+      contact",
+     [ age=64, sex=male, condition(cardiovascular_disease)=yes,
+       symptom(chest_pain)=yes
+     ]).
+case(unknown_answers,
+     "Patient with a fever who cannot tell their age, contacts or whether \c
+      they have breathing difficulty or chest pain",
+     [ age=unknown, contact_infected=unknown,
+       symptom(fever)=yes, symptom(breathing_difficulty)=unknown,
+       symptom(chest_pain)=unknown
      ]).
