@@ -305,17 +305,22 @@ rejected_exposure(Reason) :-
     \+ recent_exposure(incubating, _),
     incubation_period(Min, Max),
     atomic_list_concat(Sources, "; ", Text),
-    (   \+ no_symptoms,
-        value(days_since_onset, Onset),
+    (   no_symptoms
+    ->  format(string(Reason),
+               "~w ~w day(s) ago is longer ago than the ~w-day incubation \c
+                period", [Text, Days, Max])
+    ;   value(days_since_onset, Onset),
         integer(Onset)
     ->  Incubation is Days - Onset,
         onset_text(Incubation, OnsetText),
         format(string(Reason),
                "~w ~w day(s) ago does not fit the ~w-~w day incubation \c
                 period: ~w", [Text, Days, Min, Max, OnsetText])
-    ;   format(string(Reason),
-               "~w ~w day(s) ago is longer ago than the ~w-day incubation \c
-                period", [Text, Days, Max])
+    ;   % Unknown onset could fit any old contact, so the contact must fit.
+        format(string(Reason),
+               "~w ~w day(s) ago: with the symptom onset unknown, the \c
+                contact itself must lie within the ~w-~w day incubation \c
+                period", [Text, Days, Min, Max])
     ).
 
 onset_text(Incubation, Text) :-
