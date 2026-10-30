@@ -1,0 +1,40 @@
+---
+config:
+  theme: base
+  layout: elk
+  themeVariables:
+    fontFamily: "Georgia, 'Times New Roman', Times, serif"
+    fontSize: "15px"
+    background: "#ffffff"
+    primaryColor: "#ffffff"
+    primaryTextColor: "#1a1a1a"
+    primaryBorderColor: "#333333"
+    lineColor: "#4d4d4d"
+    edgeLabelBackground: "#ffffff"
+  flowchart:
+    htmlLabels: true
+    curve: linear
+    wrappingWidth: 420
+    nodeSpacing: 55
+    rankSpacing: 55
+    padding: 14
+---
+flowchart TB
+    ui["<b>User interface</b><br/><i>run.pl, virus_diagnosis.pl, cases.pl</i>"]
+    sld(["<b>Inference engine</b><br/>Prolog's built-in backward chaining (SLD resolution)<br/><i>provided by SWI-Prolog</i>"])
+    kb["<b>Knowledge base</b><br/><i>knowledge_base.pl, parameters.pl</i><br/>domain facts, parameters, diagnosis rules R1 to R7"]
+    wm["<b>Working memory and dialogue</b><br/><i>engine.pl, questions.pl</i><br/>working memory (known/2), questions, &quot;why&quot; goal stack"]
+    user(("<b>User</b>"))
+
+    ui -->|goal diagnosis/1| sld
+    sld -->|proves rules| kb
+    kb -->|requests facts| wm
+    user <-->|questions, answers, why| wm
+    ui -->|diagnosis and explanation| user
+    sld ~~~ user
+
+    classDef component fill:#ffffff,stroke:#333333,stroke-width:1.4px,color:#1a1a1a
+    classDef runtime fill:#ffffff,stroke:#333333,stroke-width:1.6px,stroke-dasharray:3 3,color:#1a1a1a
+
+    class ui,kb,wm,user component
+    class sld runtime
